@@ -312,24 +312,26 @@ def markowitz_target_portfolio(mu, cov, target_anual):
 
 def main():
     st.markdown("## 📈 Cálculo de Métricas de Portafolios")
-   st.markdown("""
-<div style="
-    background-color:#ffffff;
-    padding:18px;
-    border-radius:10px;
-    border-left:4px solid #7a3db8;
-    box-shadow:0px 2px 6px rgba(0,0,0,0.05);
-    margin-bottom:20px;">
-    <p style="font-size:1rem; color:#333;">
-        Aplicación para analizar portafolios de <b>Regiones</b> y <b>Sectores</b>:
-    </p>
-    <ul style="font-size:1rem; color:#333; line-height:1.6;">
-        <li>Benchmark (pesos dados)</li>
-        <li>Portafolio arbitrario (definido por el usuario)</li>
-        <li>Portafolios optimizados: mínima varianza, máximo Sharpe y Markowitz con rendimiento objetivo.</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="
+        background-color:#ffffff;
+        padding:18px;
+        border-radius:10px;
+        border-left:4px solid #7a3db8;
+        box-shadow:0px 2px 6px rgba(0,0,0,0.05);
+        margin-bottom:20px;">
+        <p style="font-size:1rem; color:#333;">
+            Aplicación para analizar portafolios de <b>Regiones</b> y <b>Sectores</b>:
+        </p>
+        <ul style="font-size:1rem; color:#333; line-height:1.6;">
+            <li>Benchmark (pesos dados)</li>
+            <li>Portafolio arbitrario (definido por el usuario)</li>
+            <li>Portafolios optimizados: mínima varianza, máximo Sharpe y Markowitz con rendimiento objetivo.</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 
     # Sidebar: parámetros generales
