@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.optimize import minimize
+import altair as alt   # <-- nuevo
 
 # ==========================
 # 1. DATOS Y PESOS
@@ -194,6 +195,27 @@ def markowitz_target_portfolio(mu, cov, target_anual):
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
 
+def efficient_frontier(mu, cov, ret_min_anual, ret_max_anual, n_points=50):
+    """
+    Calcula la frontera eficiente para rendimientos objetivo entre
+    ret_min_anual y ret_max_anual (anualizados).
+    Regresa arrays de volatilidades y rendimientos anuales.
+    """
+    targets = np.linspace(ret_min_anual, ret_max_anual, n_points)
+    vols = []
+    rets = []
+
+    for t in targets:
+        w = markowitz_target_portfolio(mu, cov, t)
+        if w is None:
+            continue
+        r_d = port_ret(w, mu)      # retorno diario
+        v_d = port_vol(w, cov)     # vol diaria
+        rets.append(r_d * 252)     # anualizar retorno
+        vols.append(v_d * np.sqrt(252))  # anualizar vol
+
+    return np.array(vols), np.array(rets)
+
 # ==========================
 # 5. APLICACIÓN STREAMLIT
 # ==========================
@@ -360,8 +382,52 @@ def main():
             })
             st.line_chart(df_cum_opt)
 
+            # -------- Frontera eficiente --------
+            st.markdown("### Frontera eficiente – Modelo de Markowitz")
+
+            mu_anual = mu * 252
+            ret_min = float(mu_anual.min())
+            ret_max = float(mu_anual.max()) * 1.5
+
+            front_vols, front_rets = efficient_frontier(mu, cov, ret_min, ret_max, n_points=80)
+
+            df_front = pd.DataFrame({
+                "Volatilidad anual": front_vols,
+                "Retorno anual": front_rets
+            })
+
+            # Puntos de los tres portafolios
+            rv_min = port_ret(w_minvar, mu) * 252
+            sv_min = port_vol(w_minvar, cov) * np.sqrt(252)
+
+            rv_s = port_ret(w_maxsharpe, mu) * 252
+            sv_s = port_vol(w_maxsharpe, cov) * np.sqrt(252)
+
+            rv_m = port_ret(w_markowitz, mu) * 252
+            sv_m = port_vol(w_markowitz, cov) * np.sqrt(252)
+
+            df_points = pd.DataFrame({
+                "Volatilidad anual": [sv_min, sv_s, sv_m],
+                "Retorno anual": [rv_min, rv_s, rv_m],
+                "Portafolio": ["Min Var", "Max Sharpe", "Markowitz"]
+            })
+
+            base = alt.Chart(df_front).mark_line().encode(
+                x=alt.X("Volatilidad anual", title="Volatilidad anual"),
+                y=alt.Y("Retorno anual", title="Retorno esperado anual")
+            )
+
+            puntos = alt.Chart(df_points).mark_point(size=80).encode(
+                x="Volatilidad anual",
+                y="Retorno anual",
+                color=alt.Color("Portafolio", legend=alt.Legend(title="Portafolio"))
+            )
+
+            st.altair_chart(base + puntos, use_container_width=True)
+
 if __name__ == "__main__":
     main()
+
 
 
 
