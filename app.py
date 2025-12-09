@@ -444,15 +444,19 @@ def main():
             st.markdown("### Métricas de portafolios")
             st.dataframe(df_metrics.style.format("{:.6f}"))
 
-            # Rendimiento acumulado
-            st.markdown("### Rendimiento acumulado")
-            df_cum = pd.DataFrame()
-            if "Benchmark" in metrics_dict:
-                df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
-            if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
-                df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
-            import plotly.graph_objects as go
+          # Rendimiento acumulado
+st.markdown("### Rendimiento acumulado")
+df_cum = pd.DataFrame()
 
+if "Benchmark" in metrics_dict:
+    df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
+
+if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
+    df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
+
+import plotly.graph_objects as go
+
+# --- IMPORTANTE: TODO DEBE IR INDENTADO A ESTE NIVEL ---
 fig = go.Figure()
 
 for col in df_cum.columns:
@@ -484,6 +488,7 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
 
 
         else:
