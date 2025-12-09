@@ -5,6 +5,12 @@ import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.optimize import minimize
 
+st.set_page_config(
+    page_title="Análisis de Portafolios",
+    page_icon="📈",
+    layout="wide"
+)
+
 # ==========================
 # 1. DATOS Y PESOS
 # ==========================
@@ -199,13 +205,15 @@ def markowitz_target_portfolio(mu, cov, target_anual):
 # ==========================
 
 def main():
-    st.title("Cálculo de Métricas – Benchmark, Arbitrario y Portafolios Optimizados")
+    st.markdown("## 📈 Cálculo de Métricas de Portafolios")
+    st.markdown(
+        """
+        Aplicación para analizar portafolios de **Regiones** y **Sectores**:
 
-    st.write(
-        "Aplicación para analizar portafolios de **Regiones** y **Sectores**:\n"
-        "- Benchmark (pesos dados)\n"
-        "- Portafolio arbitrario (definido por el usuario)\n"
-        "- Portafolios optimizados: mínima varianza, máximo Sharpe y Markowitz con rendimiento objetivo."
+        - Benchmark (pesos dados)  
+        - Portafolio arbitrario (definido por el usuario)  
+        - Portafolios optimizados: mínima varianza, máximo Sharpe y Markowitz con rendimiento objetivo.
+        """
     )
 
     # Sidebar: parámetros generales
