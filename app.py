@@ -431,7 +431,7 @@ def main():
         # ----------------------------
         # Métricas
         # ----------------------------
-        if modo != "Optimización":
+                if modo != "Optimización":
             metrics_dict = {}
 
             if modo in ["Solo benchmark", "Benchmark y arbitrario"]:
@@ -444,52 +444,49 @@ def main():
             st.markdown("### Métricas de portafolios")
             st.dataframe(df_metrics.style.format("{:.6f}"))
 
-          # Rendimiento acumulado
-st.markdown("### Rendimiento acumulado")
-df_cum = pd.DataFrame()
+            # Rendimiento acumulado
+            st.markdown("### Rendimiento acumulado")
+            df_cum = pd.DataFrame()
 
-if "Benchmark" in metrics_dict:
-    df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
+            if "Benchmark" in metrics_dict:
+                df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
 
-if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
-    df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
+            if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
+                df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
 
-import plotly.graph_objects as go
+            import plotly.graph_objects as go
 
-# --- IMPORTANTE: TODO DEBE IR INDENTADO A ESTE NIVEL ---
-fig = go.Figure()
+            fig = go.Figure()
 
-for col in df_cum.columns:
-    fig.add_trace(go.Scatter(
-        x=df_cum.index,
-        y=df_cum[col],
-        mode='lines',
-        name=col,
-        line=dict(width=3)  # grosor de línea
-    ))
+            for col in df_cum.columns:
+                fig.add_trace(go.Scatter(
+                    x=df_cum.index,
+                    y=df_cum[col],
+                    mode='lines',
+                    name=col,
+                    line=dict(width=3)  # grosor de línea
+                ))
 
-fig.update_layout(
-    title="📈 Rendimiento acumulado",
-    title_font=dict(size=24),
-    plot_bgcolor="#f9fafc",
-    paper_bgcolor="#f9fafc",
-    hovermode="x unified",
-    legend=dict(
-        bgcolor="rgba(255,255,255,0.7)",
-        bordercolor="rgba(0,0,0,0.1)",
-        borderwidth=1
-    ),
-    xaxis=dict(
-        gridcolor="rgba(0,0,0,0.1)"
-    ),
-    yaxis=dict(
-        gridcolor="rgba(0,0,0,0.1)"
-    )
-)
+            fig.update_layout(
+                title="📈 Rendimiento acumulado",
+                title_font=dict(size=24),
+                plot_bgcolor="#f9fafc",
+                paper_bgcolor="#f9fafc",
+                hovermode="x unified",
+                legend=dict(
+                    bgcolor="rgba(255,255,255,0.7)",
+                    bordercolor="rgba(0,0,0,0.1)",
+                    borderwidth=1
+                ),
+                xaxis=dict(
+                    gridcolor="rgba(0,0,0,0.1)"
+                ),
+                yaxis=dict(
+                    gridcolor="rgba(0,0,0,0.1)"
+                )
+            )
 
-st.plotly_chart(fig, use_container_width=True)
-
-
+            st.plotly_chart(fig, use_container_width=True)
 
         else:
             # Métricas de los portafolios optimizados
@@ -498,6 +495,7 @@ st.plotly_chart(fig, use_container_width=True)
                 "MaxSharpe": calcular_metricas(port_maxsharpe, rf=rf_anual),
                 "Markowitz": calcular_metricas(port_markowitz, rf=rf_anual),
             }
+
 
             df_metrics_opt = pd.DataFrame(metrics_opt)
             st.markdown("### Métricas de portafolios optimizados")
