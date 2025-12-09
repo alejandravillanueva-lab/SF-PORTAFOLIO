@@ -11,6 +11,62 @@ st.set_page_config(
     layout="wide"
 )
 
+# ====== ESTILOS CSS PARA CAMBIAR COLORES ======
+st.markdown("""
+    <style>
+    /* Fondo general */
+    .main {
+        background-color: #f7f9fc;
+    }
+
+    /* Fondo de la barra lateral */
+    section[data-testid="stSidebar"] {
+        background-color: #eef2f7;
+    }
+
+    /* Color del slider (barra roja → azul) */
+    .stSlider > div[data-baseweb="slider"] > div {
+        background: #1f77b4 !important;
+    }
+    .stSlider > div[data-baseweb="slider"] span {
+        background-color: #1f77b4 !important;
+    }
+
+    /* Botón principal */
+    div.stButton > button {
+        background-color: #1f77b4;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        border: none;
+    }
+    div.stButton > button:hover {
+        background-color: #155a8a;
+        color: #fff;
+    }
+
+    /* Títulos */
+    h1, h2, h3, h4 {
+        color: #1f3b5c;
+        font-weight: 700;
+    }
+
+    /* Tablas */
+    .stDataFrame {
+        background-color: white;
+        border-radius: 8px;
+        padding: 8px;
+        border: 1px solid #d6d6d6;
+    }
+
+    /* Texto normal */
+    .markdown-text-container {
+        color: #2a2a2a;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
 # 1. Datos de los Tickers por Regiones y Sectores
 # Se muestran los diversos ETF de Regiones como EUA, Cánada, Europa, entre otros.
 # Se muestran los de Sectores como los de Comunicaciones, consumo discrecional, consumo básico, energía, etc.
