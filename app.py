@@ -11,32 +11,28 @@ st.set_page_config(
     layout="wide"
 )
 
-# ====== Estilos personalizados ======
 st.markdown("""
 <style>
 
-    /* Cambiar color del fondo general */
-    .stApp {
-        background-color: #f9fafc;
-    }
+.stApp {
+    background-color: #f9fafc;
+}
 
-    /* Cambiar color del SLIDER */
-    input[type=range] {
-        accent-color: #c0392b !important;  /* rojo elegante */
-    }
+input[type=range] {
+    accent-color: #c0392b !important;
+}
 
-    /* Cambiar color del borde del selectbox */
-    .stSelectbox > div > div {
-        border: 1px solid #c0392b !important;
-    }
+.stSelectbox > div > div {
+    border: 1px solid #c0392b !important;
+}
 
-    /* Cambiar color del radio button */
-    .stRadio > label > div {
-        color: #c0392b !important;
-    }
+.stRadio > label > div {
+    color: #c0392b !important;
+}
 
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
