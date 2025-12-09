@@ -451,7 +451,40 @@ def main():
                 df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
             if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
                 df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
-            st.line_chart(df_cum)
+            import plotly.graph_objects as go
+
+fig = go.Figure()
+
+for col in df_cum.columns:
+    fig.add_trace(go.Scatter(
+        x=df_cum.index,
+        y=df_cum[col],
+        mode='lines',
+        name=col,
+        line=dict(width=3)  # grosor de línea
+    ))
+
+fig.update_layout(
+    title="📈 Rendimiento acumulado",
+    title_font=dict(size=24),
+    plot_bgcolor="#f9fafc",
+    paper_bgcolor="#f9fafc",
+    hovermode="x unified",
+    legend=dict(
+        bgcolor="rgba(255,255,255,0.7)",
+        bordercolor="rgba(0,0,0,0.1)",
+        borderwidth=1
+    ),
+    xaxis=dict(
+        gridcolor="rgba(0,0,0,0.1)"
+    ),
+    yaxis=dict(
+        gridcolor="rgba(0,0,0,0.1)"
+    )
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
 
         else:
             # Métricas de los portafolios optimizados
