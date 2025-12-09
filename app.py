@@ -11,6 +11,58 @@ st.set_page_config(
     layout="wide"
 )
 
+# ======== ESTILOS GENERALES ========
+st.markdown("""
+<style>
+/* Fondo general */
+.stApp {
+    background-color: #f9fafc;
+}
+
+/* Fondo de la barra lateral */
+section[data-testid="stSidebar"] {
+    background-color: #eef2f7;
+}
+
+/* Slider: barra */
+div[data-testid="stSlider"] > div > div > div:nth-child(2) > div {
+    background-color: #1f77b4 !important;
+}
+
+/* Slider: bolita */
+div[data-testid="stSlider"] div[role="slider"] {
+    background-color: #1f77b4 !important;
+    border-color: #1f77b4 !important;
+}
+
+/* Radio Buttons morados */
+div[data-testid="stRadio"] > label > div:first-child {
+    border: 2px solid #7a3db8 !important;
+}
+div[data-testid="stRadio"] > label > div:first-child:hover {
+    border-color: #a86dd8 !important;
+}
+div[data-testid="stRadio"] > label > div[aria-checked="true"] {
+    background-color: #7a3db8 !important;
+    border-color: #7a3db8 !important;
+}
+
+/* Botón morado */
+div.stButton > button {
+    background-color: #7a3db8 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    padding: 8px 20px !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+div.stButton > button:hover {
+    background-color: #5c2c91 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 st.markdown("""
 <style>
 .stApp {
