@@ -5,6 +5,17 @@ import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.optimize import minimize
 
+
+st.markdown("""
+<style>
+h2 {
+    font-size: 2.4rem !important;
+    font-weight: 800 !important;
+    color: #2b2d42 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.set_page_config(
     page_title="Análisis de Portafolios",
     page_icon="📈",
