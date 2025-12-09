@@ -428,10 +428,8 @@ def main():
         st.markdown("### Retornos diarios (primeros 5 registros)")
         st.dataframe(retornos.head())
 
-        # ----------------------------
-        # Métricas
-        # ----------------------------
-                 # ----------------------------
+        
+                # ----------------------------
         # Métricas
         # ----------------------------
         if modo != "Optimización":
@@ -448,9 +446,9 @@ def main():
             st.dataframe(df_metrics.style.format("{:.6f}"))
 
             # ----------------------------
-            # Rendimiento acumulado (Plotly)
+            # Rendimiento acumulado
             # ----------------------------
-            st.markdown("### 📈 Rendimiento acumulado")
+            st.markdown("### Rendimiento acumulado")
 
             df_cum = pd.DataFrame()
             if "Benchmark" in metrics_dict:
@@ -458,27 +456,7 @@ def main():
             if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
                 df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
 
-            import plotly.graph_objects as go
-
-            fig = go.Figure()
-
-            for col in df_cum.columns:
-                fig.add_trace(go.Scatter(
-                    x=df_cum.index,
-                    y=df_cum[col],
-                    mode='lines',
-                    name=col,
-                    line=dict(width=3)
-                ))
-
-            fig.update_layout(
-                title="📈 Rendimiento acumulado",
-                title_font=dict(size=22),
-                template="plotly_white",
-                hovermode="x unified"
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
+            st.line_chart(df_cum)
 
         else:
             # Métricas de los portafolios optimizados
@@ -488,6 +466,7 @@ def main():
                 "Markowitz": calcular_metricas(port_markowitz, rf=rf_anual),
             }
 
+       
 
 
             df_metrics_opt = pd.DataFrame(metrics_opt)
