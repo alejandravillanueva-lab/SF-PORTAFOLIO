@@ -126,7 +126,7 @@ def calcular_metricas(serie, rf=0.05):
         "Sortino (5% rf)": sortino(serie, rf=rf),
         "Max Drawdown": max_drawdown(serie),
         "VaR 95%": var_95(serie),
-        "CVaR 95%": cvar_95(r),
+        "CVaR 95%": cvar_95(serie),
         "Skew": sesgo(serie),
         "Kurtosis": curtosis(serie),
     }
@@ -362,6 +362,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
