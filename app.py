@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.optimize import minimize
-import matplotlib.pyplot as plt
 
 # --------------------------------------------------
 # Configuración básica de la página
@@ -173,7 +172,11 @@ def port_ret(w, mu):
 def min_var_portfolio(mu, cov, short=False):
     n = len(mu)
     w0 = np.ones(n) / n
-    bounds = [(-1.0, 1.0)] * n if short else [(0.0, 1.0)] * n
+    if short:
+        bounds = [(-1.0, 1.0)] * n
+    else:
+        bounds = [(0.0, 1.0)] * n
+
     cons = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0},)
 
     def obj(w):
@@ -187,14 +190,18 @@ def max_sharpe_portfolio(mu, cov, rf_anual, short=False):
     n = len(mu)
     w0 = np.ones(n) / n
     rf_diario = rf_anual / 252.0
-    bounds = [(-1.0, 1.0)] * n if short else [(0.0, 1.0)] * n
+
+    if short:
+        bounds = [(-1.0, 1.0)] * n
+    else:
+        bounds = [(0.0, 1.0)] * n
 
     def neg_sharpe(w):
         r_p = port_ret(w, mu)
         v_p = port_vol(w, cov)
         if v_p == 0:
             return 1e6
-        return -(r_p - rf_diario) / v_p
+        return - (r_p - rf_diario) / v_p
 
     cons = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0},)
 
@@ -206,7 +213,11 @@ def markowitz_target_portfolio(mu, cov, target_anual, short=False):
     n = len(mu)
     w0 = np.ones(n) / n
     target_diario = target_anual / 252.0
-    bounds = [(-1.0, 1.0)] * n if short else [(0.0, 1.0)] * n
+
+    if short:
+        bounds = [(-1.0, 1.0)] * n
+    else:
+        bounds = [(0.0, 1.0)] * n
 
     def obj(w):
         return w.T @ cov.values @ w
@@ -218,28 +229,6 @@ def markowitz_target_portfolio(mu, cov, target_anual, short=False):
 
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
-
-
-def efficient_frontier(mu, cov, ret_min_anual, ret_max_anual,
-                       n_points=50, short=False):
-    """
-    Calcula la frontera eficiente entre ret_min y ret_max (anualizados).
-    Regresa arrays de volatilidades y rendimientos anuales.
-    """
-    targets = np.linspace(ret_min_anual, ret_max_anual, n_points)
-    vols = []
-    rets = []
-
-    for t in targets:
-        w = markowitz_target_portfolio(mu, cov, t, short=short)
-        if w is None:
-            continue
-        r_daily = port_ret(w, mu)
-        v_daily = port_vol(w, cov)
-        rets.append(r_daily * 252)
-        vols.append(v_daily * np.sqrt(252))
-
-    return np.array(vols), np.array(rets)
 
 # --------------------------------------------------
 # 5. Interfaz Streamlit
@@ -345,8 +334,6 @@ def main():
         # Portafolios optimizados
         w_minvar = w_maxsharpe = w_markowitz = None
         port_minvar = port_maxsharpe = port_markowitz = None
-        front_vols = front_rets = None
-
         if modo == "Optimización":
             w_minvar = min_var_portfolio(mu, cov, short=permitir_cortos)
             w_maxsharpe = max_sharpe_portfolio(mu, cov, rf_anual, short=permitir_cortos)
@@ -360,14 +347,6 @@ def main():
             port_minvar = (retornos[cols] * w_minvar).sum(axis=1)
             port_maxsharpe = (retornos[cols] * w_maxsharpe).sum(axis=1)
             port_markowitz = (retornos[cols] * w_markowitz).sum(axis=1)
-
-            # Frontera eficiente (en anualizado)
-            mu_anual = mu * 252
-            ret_min = float(mu_anual.min())
-            ret_max = float(mu_anual.max()) * 1.5
-            front_vols, front_rets = efficient_frontier(
-                mu, cov, ret_min, ret_max, n_points=80, short=permitir_cortos
-            )
 
     st.success("Cálculos completados.")
 
@@ -392,6 +371,7 @@ def main():
             df_metrics = pd.DataFrame(metricas)
             st.dataframe(df_metrics.style.format("{:.6f}"), use_container_width=True)
 
+            # Tarjetitas de métricas principales
             for nombre, serie in metricas.items():
                 st.markdown(f"#### {nombre}")
                 c1, c2, c3, c4 = st.columns(4)
@@ -409,6 +389,7 @@ def main():
             df_metrics_opt = pd.DataFrame(metricas_opt)
             st.dataframe(df_metrics_opt.style.format("{:.6f}"), use_container_width=True)
 
+            # Pesos
             weights_df = pd.DataFrame(
                 {
                     "MinVar": w_minvar,
@@ -447,43 +428,25 @@ def main():
 
         st.line_chart(df_cum, use_container_width=True)
 
-        if modo == "Optimización":
-            st.subheader("Frontera eficiente (riesgo vs rendimiento anual)")
-            if front_vols is not None and len(front_vols) > 0:
-                fig, ax = plt.subplots()
-                ax.plot(front_vols, front_rets, label="Frontera eficiente")
-
-                # Puntos de Min Var, Máx Sharpe y Markowitz
-                rv_min = port_ret(w_minvar, mu) * 252
-                sv_min = port_vol(w_minvar, cov) * np.sqrt(252)
-                ax.scatter(sv_min, rv_min, label="Min Var")
-
-                rv_s = port_ret(w_maxsharpe, mu) * 252
-                sv_s = port_vol(w_maxsharpe, cov) * np.sqrt(252)
-                ax.scatter(sv_s, rv_s, label="Máx Sharpe")
-
-                rv_m = port_ret(w_markowitz, mu) * 252
-                sv_m = port_vol(w_markowitz, cov) * np.sqrt(252)
-                ax.scatter(sv_m, rv_m, label="Markowitz")
-
-                ax.set_xlabel("Volatilidad anual")
-                ax.set_ylabel("Retorno esperado anual")
-                ax.legend()
-                st.pyplot(fig)
-            else:
-                st.info("No se pudo construir la frontera eficiente con los parámetros actuales.")
-
-        else:
-            st.subheader("Retornos diarios")
+        st.subheader("Retornos diarios")
+        if modo != "Optimización":
             df_ret = pd.DataFrame()
-            if modo in ["Solo benchmark", "Benchmark y arbitrario"]:
+            if "Benchmark" in df_cum.columns or modo in ["Solo benchmark", "Benchmark y arbitrario"]:
                 df_ret["Benchmark"] = portafolio_bench
             if (modo in ["Solo arbitrario", "Benchmark y arbitrario"]) and (portafolio_arbi is not None):
                 df_ret["Arbitrario"] = portafolio_arbi
             st.line_chart(df_ret, use_container_width=True)
+        else:
+            df_ret_opt = pd.DataFrame({
+                "MinVar": port_minvar,
+                "MaxSharpe": port_maxsharpe,
+                "Markowitz": port_markowitz
+            })
+            st.line_chart(df_ret_opt, use_container_width=True)
 
 
 if __name__ == "__main__":
     main()
+
 
 
