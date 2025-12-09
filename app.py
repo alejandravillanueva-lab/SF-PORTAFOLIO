@@ -11,31 +11,27 @@ st.set_page_config(
     layout="wide"
 )
 
-# ======== ESTILOS GENERALES ========
 st.markdown("""
 <style>
-/* Fondo general */
 .stApp {
     background-color: #f9fafc;
 }
 
-/* Fondo de la barra lateral */
 section[data-testid="stSidebar"] {
     background-color: #eef2f7;
 }
 
-/* Slider: barra */
 div[data-testid="stSlider"] > div > div > div:nth-child(2) > div {
     background-color: #1f77b4 !important;
 }
 
-/* Slider: bolita */
+
 div[data-testid="stSlider"] div[role="slider"] {
     background-color: #1f77b4 !important;
     border-color: #1f77b4 !important;
 }
 
-/* Radio Buttons morados */
+
 div[data-testid="stRadio"] > label > div:first-child {
     border: 2px solid #7a3db8 !important;
 }
@@ -47,7 +43,6 @@ div[data-testid="stRadio"] > label > div[aria-checked="true"] {
     border-color: #7a3db8 !important;
 }
 
-/* Botón morado */
 div.stButton > button {
     background-color: #7a3db8 !important;
     color: white !important;
