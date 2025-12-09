@@ -431,7 +431,10 @@ def main():
         # ----------------------------
         # Métricas
         # ----------------------------
-                if modo != "Optimización":
+                 # ----------------------------
+        # Métricas
+        # ----------------------------
+        if modo != "Optimización":
             metrics_dict = {}
 
             if modo in ["Solo benchmark", "Benchmark y arbitrario"]:
@@ -444,13 +447,14 @@ def main():
             st.markdown("### Métricas de portafolios")
             st.dataframe(df_metrics.style.format("{:.6f}"))
 
-            # Rendimiento acumulado
-            st.markdown("### Rendimiento acumulado")
-            df_cum = pd.DataFrame()
+            # ----------------------------
+            # Rendimiento acumulado (Plotly)
+            # ----------------------------
+            st.markdown("### 📈 Rendimiento acumulado")
 
+            df_cum = pd.DataFrame()
             if "Benchmark" in metrics_dict:
                 df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
-
             if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
                 df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
 
@@ -464,26 +468,14 @@ def main():
                     y=df_cum[col],
                     mode='lines',
                     name=col,
-                    line=dict(width=3)  # grosor de línea
+                    line=dict(width=3)
                 ))
 
             fig.update_layout(
                 title="📈 Rendimiento acumulado",
-                title_font=dict(size=24),
-                plot_bgcolor="#f9fafc",
-                paper_bgcolor="#f9fafc",
-                hovermode="x unified",
-                legend=dict(
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="rgba(0,0,0,0.1)",
-                    borderwidth=1
-                ),
-                xaxis=dict(
-                    gridcolor="rgba(0,0,0,0.1)"
-                ),
-                yaxis=dict(
-                    gridcolor="rgba(0,0,0,0.1)"
-                )
+                title_font=dict(size=22),
+                template="plotly_white",
+                hovermode="x unified"
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -495,6 +487,7 @@ def main():
                 "MaxSharpe": calcular_metricas(port_maxsharpe, rf=rf_anual),
                 "Markowitz": calcular_metricas(port_markowitz, rf=rf_anual),
             }
+
 
 
             df_metrics_opt = pd.DataFrame(metrics_opt)
