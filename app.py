@@ -32,6 +32,26 @@ div[data-testid="stSlider"] div[role="slider"] {
 </style>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<style>
+
+div[data-testid="stRadio"] > label > div:first-child {
+    border: 2px solid #7a3db8 !important;
+}
+
+div[data-testid="stRadio"] > label > div:first-child:hover {
+    border-color: #a86dd8 !important;
+}
+
+div[data-testid="stRadio"] > label > div[aria-checked="true"] {
+    background-color: #7a3db8 !important;
+    border-color: #7a3db8 !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
 
 
 
