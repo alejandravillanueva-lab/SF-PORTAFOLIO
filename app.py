@@ -11,9 +11,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# ==========================
-# 1. DATOS Y PESOS
-# ==========================
+# 1. Datos de los Tickers por Regiones y Sectores
+# Se muestran los diversos ETF de Regiones como EUA, Cánada, Europa, entre otros.
+# Se muestran los de Sectores como los de Comunicaciones, consumo discrecional, consumo básico, energía, etc.
 
 TICKERS_REGIONES = ["SPLG", "EWC", "IEUR", "EEM", "EWJ"]
 
@@ -21,6 +21,7 @@ TICKERS_SECTORES = [
     "XLC","XLY","XLP","XLE","XLF",
     "XLV","XLI","XLB","XLRE","XLK","XLU"
 ]
+#Se tienen los pesos por sector y región, datos que se dan en el pdf del proyecto.
 
 PESOS_REGIONES = {
     "SPLG":0.7062,
@@ -29,7 +30,6 @@ PESOS_REGIONES = {
     "EEM":0.0902,
     "EWJ":0.0537
 }
-
 PESOS_SECTORES = {
     "XLC": 0.0999,
     "XLY": 0.1025,
@@ -44,46 +44,10 @@ PESOS_SECTORES = {
     "XLU":  0.0237
 }
 
-# ==========================
-# 2. FUNCIONES AUXILIARES
-# ==========================
+# 2.Se presentan dos tipos de funciones
 
-def descargar_precios(tickers, years=4):
-    """Descarga precios de cierre ajustados con yfinance."""
-    data = yf.download(tickers, period=f"{years}y")["Close"]
-    return data
+# 2.1. Funciones de las métricas vistas en clase
 
-def construir_portafolio(data_precios, pesos_dict):
-    """Calcula rendimientos y portafolio dada una tabla de precios y un diccionario de pesos."""
-    retornos = data_precios.pct_change().dropna()
-
-    columnas = [t for t in pesos_dict.keys() if t in retornos.columns]
-    retornos = retornos[columnas]
-
-    pesos = np.array([pesos_dict[t] for t in columnas], dtype=float)
-    pesos = pesos / pesos.sum()
-
-    portafolio = (retornos * pesos).sum(axis=1)
-    return retornos, portafolio
-
-def construir_portafolio_arbitrario(retornos, pesos_dict):
-    """Construye portafolio usando retornos ya calculados y pesos arbitrarios."""
-    columnas = [t for t in pesos_dict.keys() if t in retornos.columns]
-    r = retornos[columnas]
-    pesos = np.array([pesos_dict[t] for t in columnas], dtype=float)
-    pesos = pesos / pesos.sum()
-    portafolio = (r * pesos).sum(axis=1)
-    return portafolio
-
-def obtener_mu_cov(retornos):
-    """Media diaria y matriz de covarianza de los retornos."""
-    mu = retornos.mean()          # media diaria
-    cov = retornos.cov()          # covarianza diaria
-    return mu, cov
-
-# ==========================
-# 3. FUNCIONES DE MÉTRICAS
-# ==========================
 
 def beta(port, benchmark):
     cov = np.cov(port, benchmark)[0, 1]
@@ -137,9 +101,49 @@ def calcular_metricas(serie, rf=0.05):
         "Kurtosis": curtosis(serie),
     }
 
-# ==========================
-# 4. OPTIMIZACIÓN DE PORTAFOLIOS
-# ==========================
+
+# 2.2. Funciones que se encargan de:
+#  Descargar precios, Calcular rendimientos, Construir portafolios a partir de pesos
+#  Obtener medias y covarianzas.
+
+
+def descargar_precios(tickers, years=4):
+    data = yf.download(tickers, period=f"{years}y")["Close"]
+    return data
+
+# Construye un portafolio usando retornos ya calculados y pesos arbitrarios.
+
+
+def construir_portafolio_arbitrario(retornos, pesos_dict):
+    columnas = [t for t in pesos_dict.keys() if t in retornos.columns]
+    r = retornos[columnas]
+    pesos = np.array([pesos_dict[t] for t in columnas], dtype=float)
+    pesos = pesos / pesos.sum()
+    portafolio = (r * pesos).sum(axis=1)
+    return portafolio
+
+def obtener_mu_cov(retornos):
+    mu = retornos.mean()          # media diaria
+    cov = retornos.cov()          # covarianza diaria
+    return mu, cov
+
+#  Calcula rendimientos y portafolio dada una tabla de precios y pesos (diccionario).
+
+def construir_portafolio(data_precios, pesos_dict):
+    retornos = data_precios.pct_change().dropna()
+
+    columnas = [t for t in pesos_dict.keys() if t in retornos.columns]
+    retornos = retornos[columnas]
+
+    pesos = np.array([pesos_dict[t] for t in columnas], dtype=float)
+    pesos = pesos / pesos.sum()
+
+    portafolio = (retornos * pesos).sum(axis=1)
+    return retornos, portafolio
+
+
+
+# 4. Optimización de portafolio
 
 def port_vol(w, cov):
     w = np.array(w)
