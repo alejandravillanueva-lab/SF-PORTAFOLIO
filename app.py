@@ -204,9 +204,8 @@ def markowitz_target_portfolio(mu, cov, target_anual):
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
 
-# ==========================
-# 5. APLICACIÓN STREAMLIT
-# ==========================
+
+# 5. App
 
 def main():
     st.markdown("## 📈 Cálculo de Métricas de Portafolios")
