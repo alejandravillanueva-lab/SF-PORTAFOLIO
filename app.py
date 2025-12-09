@@ -13,25 +13,25 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-
 .stApp {
     background-color: #f9fafc;
 }
 
-input[type=range] {
-    accent-color: #c0392b !important;
+section[data-testid="stSidebar"] {
+    background-color: #eef2f7;
 }
 
-.stSelectbox > div > div {
-    border: 1px solid #c0392b !important;
+div[data-testid="stSlider"] > div > div > div:nth-child(2) > div {
+    background-color: #1f77b4 !important;
 }
 
-.stRadio > label > div {
-    color: #c0392b !important;
+div[data-testid="stSlider"] div[role="slider"] {
+    background-color: #1f77b4 !important;
+    border-color: #1f77b4 !important;
 }
-
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
