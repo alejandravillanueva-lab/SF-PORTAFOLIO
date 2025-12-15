@@ -512,8 +512,6 @@ def main():
                 c3.metric("Sharpe", f"{metricas_bl['sharpe']:.4f}")
                 c4.metric("Tracking error (%)", f"{metricas_bl['tracking_error (%)']:.2f}")
 
-                st.write(metricas_bl)
-
 if __name__ == "__main__":
     main()
 
