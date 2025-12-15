@@ -385,14 +385,14 @@ def main():
     visiones = []
 
     if modo == "Black-Litterman":
-        st.sidebar.markdown("### 🔮 Black-Litterman")
+        st.sidebar.markdown("### Black-Litterman")
         tau = st.sidebar.number_input("Tau (τ)", 0.001, 1.0, 0.05, 0.01)
         delta = st.sidebar.number_input("Delta (δ)", 0.1, 10.0, 2.5, 0.1)
         metodo_post_bl = st.sidebar.selectbox("Optimización post-BL", ["Mínima Varianza", "Máximo Sharpe", "Markowitz"])
         if metodo_post_bl == "Markowitz":
             rendimiento_obj_bl = st.sidebar.number_input("Rendimiento objetivo post-BL (%)", 0.0, 50.0, 10.0, 0.5)
 
-        st.sidebar.markdown("### 👁️ Visiones")
+        st.sidebar.markdown("### Visiones")
         num_visiones = st.sidebar.number_input("Número de visiones", 0, len(tickers), 0, 1)
 
         for i in range(int(num_visiones)):
