@@ -440,10 +440,17 @@ def main():
                     metrics_dict["Arbitrario"] = calcular_metricas(port_arbi, rf=rf_anual)
 
                 st.markdown("### Métricas de portafolios")
-                st.dataframe(
-                df_metrics.round(6),
-                use_container_width=True
-                    )
+
+                df_show = df_metrics.copy()
+
+                for fila in df_show.index:
+                    if "Sharpe" in fila or "Sortino" in fila or "Skew" in fila or "Kurtosis" in fila:
+                        df_show.loc[fila] = df_show.loc[fila].round(3)
+                    else:
+                        df_show.loc[fila] = (df_show.loc[fila] * 100).round(2)
+
+                st.dataframe(df_show, use_container_width=True)
+
 
 
                 st.markdown("### Rendimiento acumulado")
