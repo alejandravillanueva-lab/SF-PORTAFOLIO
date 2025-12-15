@@ -440,7 +440,11 @@ def main():
                     metrics_dict["Arbitrario"] = calcular_metricas(port_arbi, rf=rf_anual)
 
                 st.markdown("### Métricas de portafolios")
-                st.dataframe(pd.DataFrame(metrics_dict).style.format("{:.6f}"))
+                st.dataframe(
+                df_metrics.round(6),
+                use_container_width=True
+                    )
+
 
                 st.markdown("### Rendimiento acumulado")
                 df_cum = pd.DataFrame()
