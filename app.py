@@ -505,14 +505,6 @@ def main():
                 st.dataframe(pd.Series(pesos_bl).to_frame("Peso (%)").style.format("{:.2f}"))
 
                 st.markdown("### Métricas (post BL)")
-                st.markdown("### 📊 Métricas Black–Litterman")
-
-                cols = st.columns(4)
-                cols[0].metric("Rendimiento (%)", metricas_bl["rendimiento"])
-                cols[1].metric("Volatilidad (%)", metricas_bl["volatilidad"])
-                cols[2].metric("Sharpe", metricas_bl["sharpe"])
-                cols[3].metric("Tracking Error (%)", metricas_bl["tracking_error"])
-
 
 if __name__ == "__main__":
     main()
