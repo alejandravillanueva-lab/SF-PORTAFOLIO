@@ -527,10 +527,11 @@ def main():
     rf_anual = st.sidebar.number_input("Tasa libre de riesgo anual (rf)", 0.0, 0.20, 0.05, step=0.005)
 
     modo = st.sidebar.radio(
-        "Portafios a calcular",
-        ["Solo benchmark", "Solo arbitrario", "Benchmark y arbitrario", "Optimización"],
-        index=2
+    "Portafios a calcular",
+    ["Solo benchmark", "Solo arbitrario", "Benchmark y arbitrario", "Optimización", "Black-Litterman"],
+    index=2
     )
+
 
     if estrategia == "Regiones":
         tickers = TICKERS_REGIONES
