@@ -126,7 +126,7 @@ def construir_portafolio_arbitrario(retornos, pesos_dict):
     pesos = pesos / pesos.sum()
     return (r * pesos).sum(axis=1)
 
-def obtener_mu_cov(retornos):
+def mu_cov(retornos):
     return retornos.mean(), retornos.cov()
     
 # Funciones de optimización
@@ -398,7 +398,7 @@ def main():
         with st.spinner("Descargando datos y calculando…"):
             data = descargar_precios(tickers, years)
             retornos, port_bench = construir_portafolio(data, pesos_bench)
-            mu, cov = obtener_mu_cov(retornos)
+            mu, cov = mu_cov(retornos)
 
         st.markdown("### Precios de cierre (últimos 10 registros)")
         st.dataframe(data.tail(10))
