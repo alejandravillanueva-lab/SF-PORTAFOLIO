@@ -135,7 +135,7 @@ def port_vol(w, cov):
     w = np.array(w)
     return np.sqrt(w.T @ cov.values @ w)
 
-def port_ret(w, mu):
+def port_retorno(w, mu):
     w = np.array(w)
     return w @ mu.values
 
@@ -159,7 +159,7 @@ def max_sharpe_portfolio(mu, cov, rf_anual):
     cons = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0},)
 
     def neg_sharpe(w):
-        r_p = port_ret(w, mu)
+        r_p = port_retorno(w, mu)
         v_p = port_vol(w, cov)
         if v_p == 0:
             return 1e6
@@ -179,7 +179,7 @@ def markowitz_target_portfolio(mu, cov, target_anual):
 
     cons = (
         {'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0},
-        {'type': 'eq', 'fun': lambda w: port_ret(w, mu) - target_diario},
+        {'type': 'eq', 'fun': lambda w: port_retorno(w, mu) - target_diario},
     )
 
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
