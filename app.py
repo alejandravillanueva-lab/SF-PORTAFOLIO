@@ -505,6 +505,7 @@ def main():
                 st.dataframe(pd.Series(pesos_bl).to_frame("Peso (%)").style.format("{:.2f}"))
 
                 st.markdown("### Métricas (post BL)")
+                st.write(metricas_bl)
 
 if __name__ == "__main__":
     main()
