@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.optimize import minimize
+import scipy.optimize as op
+
 
 
 st.markdown("""
