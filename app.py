@@ -306,6 +306,8 @@ def markowitz_target_portfolio(mu, cov, target_anual):
 
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
+def black_litterman_placeholder():
+    pass
 
 
 # 5. App
