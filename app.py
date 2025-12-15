@@ -6,18 +6,12 @@ from scipy.stats import skew, kurtosis
 from scipy.optimize import minimize
 import scipy.optimize as op
 
-# =========================================================
-# 0) CONFIG (DEBE IR ANTES DE CUALQUIER st.xxx)
-# =========================================================
 st.set_page_config(
     page_title="Análisis de Portafolios",
     page_icon="📈",
     layout="wide"
 )
 
-# =========================================================
-# 0.1) ESTILOS
-# =========================================================
 st.markdown("""
 <style>
 h2 {
@@ -64,9 +58,8 @@ div.stButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# =========================================================
-# 1) TICKERS Y PESOS
-# =========================================================
+# Tickers y pesos
+
 TICKERS_REGIONES = ["SPLG", "EWC", "IEUR", "EEM", "EWJ"]
 TICKERS_SECTORES = ["XLC","XLY","XLP","XLE","XLF","XLV","XLI","XLB","XLRE","XLK","XLU"]
 
@@ -74,14 +67,19 @@ PESOS_REGIONES = {"SPLG":0.7062,"EWC":0.0323,"IEUR":0.1176,"EEM":0.0902,"EWJ":0.
 PESOS_SECTORES = {"XLC":0.0999,"XLY":0.1025,"XLP":0.0482,"XLE":0.0295,"XLF":0.1307,
                   "XLV":0.0958,"XLI":0.0809,"XLB":0.0166,"XLRE":0.0187,"XLK":0.3535,"XLU":0.0237}
 
-# =========================================================
-# 2) MÉTRICAS
-# =========================================================
+# Funciones de las métricas
+
 def sharpe(r, rf=0.0):
     excess = r - rf/252
     std = excess.std()
     return np.sqrt(252) * excess.mean() / std if std != 0 else np.nan
 
+def var_95(r):
+    return np.percentile(r, 5)
+
+def cvar_95(r):
+    v = var_95(r)
+    return r[r <= v].mean()
 def sortino(r, rf=0.0):
     excess = r - rf/252
     downside = excess[excess < 0].std()
@@ -92,13 +90,6 @@ def max_drawdown(r):
     peak = cum.cummax()
     dd = (cum - peak) / peak
     return dd.min()
-
-def var_95(r):
-    return np.percentile(r, 5)
-
-def cvar_95(r):
-    v = var_95(r)
-    return r[r <= v].mean()
 
 def calcular_metricas(serie, rf=0.05):
     return {
@@ -113,9 +104,8 @@ def calcular_metricas(serie, rf=0.05):
         "Kurtosis": kurtosis(serie),
     }
 
-# =========================================================
-# 3) DATOS Y PORTAFOLIOS
-# =========================================================
+
+# Datos
 def descargar_precios(tickers, years=4):
     data = yf.download(tickers, period=f"{years}y")["Close"]
     return data
@@ -138,10 +128,9 @@ def construir_portafolio_arbitrario(retornos, pesos_dict):
 
 def obtener_mu_cov(retornos):
     return retornos.mean(), retornos.cov()
+    
+# Funciones de optimización
 
-# =========================================================
-# 4) OPTIMIZACIÓN
-# =========================================================
 def port_vol(w, cov):
     w = np.array(w)
     return np.sqrt(w.T @ cov.values @ w)
@@ -195,10 +184,8 @@ def markowitz_target_portfolio(mu, cov, target_anual):
 
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
-
-# =========================================================
-# 5) BLACK-LITTERMAN
-# =========================================================
+    
+# Black-Litterman
 def black_litterman(data, pesos_mercado, visiones, tau=0.05, delta=2.5,
                     metodo_post="Markowitz", rendimiento_objetivo=None,
                     peso_min=0, peso_max=1):
@@ -309,9 +296,7 @@ def black_litterman(data, pesos_mercado, visiones, tau=0.05, delta=2.5,
 
     return rend_imp, rend_bl, pesos_bl, metricas
 
-# =========================================================
-# 6) APP
-# =========================================================
+# Aplicación
 def main():
     st.markdown("## 📈 Cálculo de Métricas de Portafolios")
 
