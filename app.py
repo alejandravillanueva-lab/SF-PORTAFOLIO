@@ -168,7 +168,7 @@ def max_sharpe_portfolio(mu, cov, rf_anual):
     res = minimize(neg_sharpe, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
 
-def markowitz_target_portfolio(mu, cov, target_anual):
+def port_objetivo_marko(mu, cov, target_anual):
     n = len(mu)
     w0 = np.ones(n) / n
     bounds = [(0.0, 1.0)] * n
@@ -421,7 +421,6 @@ def main():
 
             st.markdown("### Métricas de portafolios")
 
-            # ✅ AQUÍ ESTABA TU BUG: df_metrics no existía
             df_metrics = pd.DataFrame(metrics_dict)
             df_show = df_metrics.copy()
 
@@ -444,10 +443,10 @@ def main():
         elif modo == "Optimización":
             w_minvar = min_var_portfolio(mu, cov)
             w_maxsharpe = max_sharpe_portfolio(mu, cov, rf_anual)
-            w_markowitz = markowitz_target_portfolio(mu, cov, target_anual)
+            w_markowitz = port_objetivo_marko(mu, cov, target_anual)
 
             if w_minvar is None or w_maxsharpe is None or w_markowitz is None:
-                st.error("No se pudo encontrar una solución óptima para alguna de las optimizaciones.")
+                st.error("No hay solución óptima para alguna de las optimizaciones.")
                 return
 
             cols = retornos.columns
