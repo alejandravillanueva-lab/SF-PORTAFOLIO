@@ -567,71 +567,7 @@ def main():
             value=0.10,
             step=0.01
         )
-==========================
-   # BLACK-LITTERMAN (inputs sidebar)
-# ==========================
-visiones = []
-tau = 0.05
-delta = 2.5
-metodo_post = "Markowitz"
-rendimiento_objetivo_bl = None
-peso_min_bl = 0.0
-peso_max_bl = 1.0
 
-if modo == "Black-Litterman":
-    st.sidebar.markdown("### 🧠 Black-Litterman")
-
-    tau = st.sidebar.number_input("Tau (τ)", min_value=0.001, max_value=1.0, value=0.05, step=0.01, format="%.3f")
-    delta = st.sidebar.number_input("Delta (δ) aversión al riesgo", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
-
-    metodo_post = st.sidebar.selectbox(
-        "Optimización post-BL",
-        ["Mínima Varianza", "Máximo Sharpe", "Markowitz"],
-        index=2
-    )
-
-    if metodo_post == "Markowitz":
-        rendimiento_objetivo_bl = st.sidebar.number_input(
-            "Rendimiento objetivo (%)",
-            min_value=0.0,
-            max_value=50.0,
-            value=10.0,
-            step=0.5
-        )
-
-    st.sidebar.markdown("#### 🔒 Restricciones de pesos")
-    peso_min_bl = st.sidebar.number_input("Peso mínimo", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    peso_max_bl = st.sidebar.number_input("Peso máximo", min_value=0.0, max_value=1.0, value=1.0, step=0.01)
-
-    st.sidebar.markdown("#### 👁️ Visiones (Views)")
-    n_views = st.sidebar.number_input("Número de visiones", min_value=0, max_value=len(tickers), value=2, step=1)
-
-    for i in range(n_views):
-        st.sidebar.markdown(f"**Visión {i+1}**")
-        activo_1 = st.sidebar.selectbox(f"Activo 1 (v{i+1})", tickers, key=f"bl_a1_{i}")
-        operador = st.sidebar.selectbox(f"Operador (v{i+1})", [">", "<", "="], key=f"bl_op_{i}")
-        activo_2 = st.sidebar.selectbox(
-            f"Activo 2 (v{i+1})",
-            ["Rendimiento Absoluto"] + tickers,
-            key=f"bl_a2_{i}"
-        )
-
-        if activo_2 == "Rendimiento Absoluto":
-            valor = st.sidebar.number_input(f"Rendimiento (%) (v{i+1})", value=5.0, step=0.5, key=f"bl_val_{i}")
-        else:
-            valor = st.sidebar.number_input(f"Diferencia (%) (v{i+1})", value=2.0, step=0.5, key=f"bl_val_{i}")
-
-        confianza = st.sidebar.slider(f"Confianza (1-10) (v{i+1})", 1, 10, 5, key=f"bl_conf_{i}")
-
-        visiones.append({
-            "activo_1": activo_1,
-            "operador": operador,
-            "activo_2": activo_2,
-            "valor": valor,
-            "confianza": confianza
-        })
-
-##########################
     st.subheader(f"Estrategia seleccionada: {estrategia}")
 
     if st.button("Calcular métricas"):
