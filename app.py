@@ -501,11 +501,11 @@ def main():
                     peso_max=1.0
                 )
 
-                st.markdown("### Black-Litterman — Rendimientos implícitos vs BL")
+                st.markdown("###  Rendimientos implícitos vs Black Litterman")
                 df_bl = pd.DataFrame({"Implicitos (%)": pd.Series(rend_imp), "BL (%)": pd.Series(rend_bl)})
                 st.dataframe(df_bl.style.format("{:.2f}"))
 
-                st.markdown("### Pesos optimizados (post BL)")
+                st.markdown("### Pesos optimizados")
                 st.dataframe(pd.Series(pesos_bl).to_frame("Peso (%)").style.format("{:.2f}"))
 
                 st.markdown("### Métricas Black-Litterman")
