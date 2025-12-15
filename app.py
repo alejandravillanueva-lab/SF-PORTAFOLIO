@@ -306,8 +306,193 @@ def markowitz_target_portfolio(mu, cov, target_anual):
 
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
-def black_litterman_placeholder():
-    pass
+
+    # --------------------------- BLACK-LITTERMAN ----------------------------------------
+
+def black_litterman(data, pesos_mercado, visiones, tau=0.05, delta=2.5, metodo_post="Markowitz",
+                    rendimiento_objetivo=None, peso_min=0, peso_max=1):
+    """
+    metodo_post : str
+        Método de optimización post-BL ("Mínima Varianza", "Máximo Sharpe", "Markowitz")
+    rendimiento_objetivo : float
+        Solo si metodo_post == "Markowitz"
+    peso_min, peso_max : float
+        Restricciones de pesos
+
+    Retorna:
+    --------
+    tuple: (rendimientos_implicitos, rendimientos_bl, pesos_optimizados, metricas)
+    """
+
+    # --- 1. PREPARACIÓN DE DATOS ---
+    returns = data.pct_change().dropna()
+    mean_returns = returns.mean() * 252
+    cov_matrix = returns.cov() * 252
+    activos = list(data.columns)
+    n = len(activos)
+
+    # Convertir pesos de mercado a array (normalizado)
+    w_market = np.array([pesos_mercado[activo] / 100 for activo in activos])
+    w_market = w_market / w_market.sum()
+
+    # CALCULAR RENDIMIENTOS IMPLÍCITOS (EQUILIBRIO) 
+    pi = delta * (cov_matrix @ w_market)
+
+    # CONSTRUIR MATRIZ P Y VECTORES Q
+    k = len(visiones)  # Número de visiones
+
+    if k == 0:
+        # Sin visiones, usar directamente los rendimientos implícitos
+        mu_bl = pi
+        P = np.zeros((1, n))
+        Q = np.zeros(1)
+    else:
+        P = np.zeros((k, n))
+        Q = np.zeros(k)
+        omega_diag = np.zeros(k)
+
+        for i, vista in enumerate(visiones):
+            activo_1 = vista['activo_1']
+            activo_2 = vista['activo_2']
+            valor = vista['valor'] / 100  # Convertir porcentaje a decimal
+            confianza = vista['confianza']
+            operador = vista['operador']
+
+            # Índice del activo 1
+            idx_1 = activos.index(activo_1)
+
+            if activo_2 == "Rendimiento Absoluto":
+                # Vista absoluta: R_activo1 = valor
+                P[i, idx_1] = 1.0
+                Q[i] = valor
+            else:
+                # Vista relativa: R_activo1 - R_activo2 = valor
+                idx_2 = activos.index(activo_2)
+
+                if operador == ">":
+                    # activo_1 > activo_2 por valor%
+                    P[i, idx_1] = 1.0
+                    P[i, idx_2] = -1.0
+                    Q[i] = valor
+                elif operador == "<":
+                    # activo_1 < activo_2 por valor%
+                    P[i, idx_1] = 1.0
+                    P[i, idx_2] = -1.0
+                    Q[i] = -valor
+                else:  # "="
+                    # activo_1 = activo_2 (diferencia = 0)
+                    P[i, idx_1] = 1.0
+                    P[i, idx_2] = -1.0
+                    Q[i] = 0.0
+
+            # Calcular incertidumbre de la vista basada en confianza
+            # Confianza más alta = menor incertidumbre
+            # Ω_i = τ * P_i * Σ * P_i^T / confianza_normalizada
+            confianza_normalizada = confianza / 10.0  # 1-10 -> 0.1-1.0
+            omega_diag[i] = tau * (P[i] @ cov_matrix @ P[i].T) / (confianza_normalizada ** 2)
+
+        Omega = np.diag(omega_diag)
+
+        # --- 4. CALCULAR RENDIMIENTOS ESPERADOS BLACK-LITTERMAN ---
+        # μ_BL = [(τΣ)^-1 + P'Ω^-1P]^-1 [(τΣ)^-1π + P'Ω^-1Q]
+
+        tau_sigma = tau * cov_matrix
+        tau_sigma_inv = np.linalg.inv(tau_sigma)
+        omega_inv = np.linalg.inv(Omega)
+
+        # Término izquierdo: [(τΣ)^-1 + P'Ω^-1P]^-1
+        left_term = np.linalg.inv(tau_sigma_inv + P.T @ omega_inv @ P)
+
+        # Término derecho: [(τΣ)^-1π + P'Ω^-1Q]
+        right_term = tau_sigma_inv @ pi + P.T @ omega_inv @ Q
+
+        # Rendimientos esperados BL
+        mu_bl = left_term @ right_term
+
+    # Crear DataFrame temporal con los rendimientos BL para usar la función de optimización
+
+    # Sustituir los retornos medios en la optimización
+    mean_returns_bl = pd.Series(mu_bl, index=activos)
+
+    # Función auxiliar para optimización con BL
+    def portfolio_performance_bl(weights):
+        ret = np.dot(weights, mean_returns_bl)
+        vol = np.sqrt(weights @ cov_matrix @ weights.T)
+        return ret, vol
+
+    # Optimización según método
+    if metodo_post == "Mínima Varianza":
+        x0 = np.ones(n)/n
+        bounds = tuple((peso_min, peso_max) for _ in range(n))
+        constraints = ({'type':'eq','fun':lambda w: np.sum(w)-1})
+
+        result = op.minimize(
+            lambda w: portfolio_performance_bl(w)[1],
+            x0, constraints=constraints, bounds=bounds, method='SLSQP'
+        )
+        pesos_opt = result.x
+        ret_opt, vol_opt = portfolio_performance_bl(pesos_opt)
+
+    elif metodo_post == "Máximo Sharpe":
+        x0 = np.ones(n)/n
+        bounds = tuple((peso_min, peso_max) for _ in range(n))
+        constraints = ({'type':'eq','fun':lambda w: np.sum(w)-1})
+
+        def neg_sharpe(w):
+            r, vol = portfolio_performance_bl(w)
+            return -(r - 0.0) / vol
+
+        result = op.minimize(
+            neg_sharpe, x0, constraints=constraints, bounds=bounds, method='SLSQP'
+        )
+        pesos_opt = result.x
+        ret_opt, vol_opt = portfolio_performance_bl(pesos_opt)
+
+    else:  # Markowitz
+        if rendimiento_objetivo is None:
+            rendimiento_objetivo = mean_returns_bl.mean()
+
+        rendimiento_objetivo = rendimiento_objetivo / 100.0
+
+        x0 = np.ones(n) / n
+        bounds = tuple((peso_min, peso_max) for _ in range(n))
+
+        constraints = (
+            {'type': 'eq', 'fun': lambda w: np.sum(w) - 1},
+            {'type': 'eq', 'fun': lambda w: np.dot(w, mean_returns_bl) - rendimiento_objetivo}
+        )
+
+        def variance(w):
+            return w @ cov_matrix @ w.T
+
+        result = op.minimize(
+            variance, x0, method='SLSQP', bounds=bounds, constraints=constraints
+        )
+        pesos_opt = result.x
+        ret_opt, vol_opt = portfolio_performance_bl(pesos_opt)
+
+    # Convertir a porcentajes y diccionarios
+    rendimientos_implicitos = {activo: round(pi[i] * 100, 2) for i, activo in enumerate(activos)}
+    rendimientos_bl = {activo: round(mu_bl[i] * 100, 2) for i, activo in enumerate(activos)}
+    pesos_optimizados = {activo: round(pesos_opt[i] * 100, 2) for i, activo in enumerate(activos)}
+
+    # Calcular métricas
+    sharpe_ratio = (ret_opt - 0.0) / vol_opt if vol_opt != 0 else 0
+
+    # Calcular tracking error vs benchmark
+    w_bench = np.array([pesos_mercado[activo] / 100 for activo in activos])
+    w_bench = w_bench / w_bench.sum()
+    ret_bench = np.dot(w_bench, mean_returns_bl)
+    tracking_error = abs(ret_opt - ret_bench)
+
+    metricas = {
+        'rendimiento': round(ret_opt * 100, 2),
+        'volatilidad': round(vol_opt * 100, 2),
+        'sharpe': round(sharpe_ratio, 4),
+        'tracking_error': round(tracking_error * 100, 2)
+    }
+
+    return rendimientos_implicitos, rendimientos_bl, pesos_optimizados, metricas
 
 
 # 5. App
