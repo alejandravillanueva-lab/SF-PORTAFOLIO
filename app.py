@@ -515,11 +515,10 @@ def main():
             <li>Benchmark (pesos dados)</li>
             <li>Portafolio arbitrario (definido por el usuario)</li>
             <li>Portafolios optimizados: mínima varianza, máximo Sharpe y Markowitz con rendimiento objetivo.</li>
+            <li>Black-Litterman (prior + visiones del gestor)</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
-
-
 
     # Sidebar: parámetros generales
     estrategia = st.sidebar.selectbox("Estrategia", ["Regiones", "Sectores"])
@@ -527,11 +526,10 @@ def main():
     rf_anual = st.sidebar.number_input("Tasa libre de riesgo anual (rf)", 0.0, 0.20, 0.05, step=0.005)
 
     modo = st.sidebar.radio(
-    "Portafios a calcular",
-    ["Solo benchmark", "Solo arbitrario", "Benchmark y arbitrario", "Optimización", "Black-Litterman"],
-    index=2
+        "Portafolios a calcular",
+        ["Solo benchmark", "Solo arbitrario", "Benchmark y arbitrario", "Optimización", "Black-Litterman"],
+        index=2
     )
-
 
     if estrategia == "Regiones":
         tickers = TICKERS_REGIONES
@@ -568,17 +566,72 @@ def main():
             step=0.01
         )
 
+    # Parámetros Black-Litterman (si aplica)
+    tau = delta = None
+    metodo_post_bl = None
+    rendimiento_obj_bl = None
+    num_visiones = 0
+    visiones = []
+
+    if modo == "Black-Litterman":
+        st.sidebar.markdown("### 🔮 Black-Litterman")
+        tau = st.sidebar.number_input("Tau (τ)", min_value=0.001, max_value=1.0, value=0.05, step=0.01)
+        delta = st.sidebar.number_input("Delta (δ) Aversión al riesgo", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
+
+        metodo_post_bl = st.sidebar.selectbox(
+            "Optimización post-BL",
+            ["Mínima Varianza", "Máximo Sharpe", "Markowitz"]
+        )
+
+        if metodo_post_bl == "Markowitz":
+            rendimiento_obj_bl = st.sidebar.number_input(
+                "Rendimiento objetivo post-BL (%)",
+                min_value=0.0, max_value=50.0, value=10.0, step=0.5
+            )
+
+        st.sidebar.markdown("### 👁️ Visiones (Views)")
+        num_visiones = st.sidebar.number_input("Número de visiones", min_value=0, max_value=len(tickers), value=0, step=1)
+
+        # Las visiones se capturan en el sidebar para que no “ensucie” la pantalla principal
+        for i in range(int(num_visiones)):
+            st.sidebar.markdown(f"**Visión {i+1}**")
+            activo_1 = st.sidebar.selectbox("Activo 1", tickers, key=f"bl_a1_{i}")
+            operador = st.sidebar.selectbox("Operador", [">", "<", "="], key=f"bl_op_{i}")
+            activo_2 = st.sidebar.selectbox("Activo 2 / Absoluto", ["Rendimiento Absoluto"] + tickers, key=f"bl_a2_{i}")
+
+            if activo_2 == "Rendimiento Absoluto":
+                valor = st.sidebar.number_input("Rendimiento (%)", value=5.0, step=0.5, key=f"bl_val_{i}")
+            else:
+                valor = st.sidebar.number_input("Diferencia (%)", value=2.0, step=0.5, key=f"bl_val_{i}")
+
+            confianza = st.sidebar.slider("Confianza (1-10)", min_value=1, max_value=10, value=5, key=f"bl_conf_{i}")
+
+            visiones.append({
+                "activo_1": activo_1,
+                "operador": operador,
+                "activo_2": activo_2,
+                "valor": float(valor),
+                "confianza": int(confianza)
+            })
+
     st.subheader(f"Estrategia seleccionada: {estrategia}")
 
     if st.button("Calcular métricas"):
+        # Variables que vamos a usar fuera del spinner
+        portafolio_bench = None
+        portafolio_arbi = None
+
+        w_minvar = w_maxsharpe = w_markowitz = None
+        port_minvar = port_maxsharpe = port_markowitz = None
+
+        rend_imp = rend_bl = pesos_bl = metricas_bl = None
+
         with st.spinner("Descargando datos y calculando…"):
             data = descargar_precios(tickers, years)
             retornos, portafolio_bench = construir_portafolio(data, pesos_bench)
-
             mu, cov = obtener_mu_cov(retornos)
 
             # Portafolio arbitrario (si aplica)
-            portafolio_arbi = None
             if modo in ["Solo arbitrario", "Benchmark y arbitrario"]:
                 if sum(pesos_arbitrarios.values()) == 0:
                     st.error("Los pesos del portafolio arbitrario no pueden ser todos cero.")
@@ -586,15 +639,9 @@ def main():
                 portafolio_arbi = construir_portafolio_arbitrario(retornos, pesos_arbitrarios)
 
             # Portafolios optimizados (si aplica)
-            w_minvar = w_maxsharpe = w_markowitz = None
-            port_minvar = port_maxsharpe = port_markowitz = None
-
             if modo == "Optimización":
-                # Mínima varianza
                 w_minvar = min_var_portfolio(mu, cov)
-                # Máximo Sharpe
                 w_maxsharpe = max_sharpe_portfolio(mu, cov, rf_anual)
-                # Markowitz con retorno objetivo
                 w_markowitz = markowitz_target_portfolio(mu, cov, target_anual)
 
                 if w_minvar is None or w_maxsharpe is None or w_markowitz is None:
@@ -602,10 +649,26 @@ def main():
                     return
 
                 cols = retornos.columns
-                # Series de retornos de cada portafolio optimizado
                 port_minvar = (retornos[cols] * w_minvar).sum(axis=1)
                 port_maxsharpe = (retornos[cols] * w_maxsharpe).sum(axis=1)
                 port_markowitz = (retornos[cols] * w_markowitz).sum(axis=1)
+
+            # Black-Litterman (si aplica)
+            if modo == "Black-Litterman":
+                # tu función espera pesos de mercado en % (no decimales)
+                pesos_mercado_pct = {t: float(pesos_bench[t]) * 100 for t in tickers}
+
+                rend_imp, rend_bl, pesos_bl, metricas_bl = black_litterman(
+                    data=data,
+                    pesos_mercado=pesos_mercado_pct,
+                    visiones=visiones,
+                    tau=tau,
+                    delta=delta,
+                    metodo_post=metodo_post_bl,
+                    rendimiento_objetivo=rendimiento_obj_bl,
+                    peso_min=0.0,
+                    peso_max=1.0
+                )
 
         # ----------------------------
         # Mostrar datos básicos
@@ -616,11 +679,10 @@ def main():
         st.markdown("### Retornos diarios (primeros 5 registros)")
         st.dataframe(retornos.head())
 
-        
-                # ----------------------------
-        # Métricas
         # ----------------------------
-        if modo != "Optimización":
+        # Resultados según modo
+        # ----------------------------
+        if modo != "Optimización" and modo != "Black-Litterman":
             metrics_dict = {}
 
             if modo in ["Solo benchmark", "Benchmark y arbitrario"]:
@@ -633,11 +695,7 @@ def main():
             st.markdown("### Métricas de portafolios")
             st.dataframe(df_metrics.style.format("{:.6f}"))
 
-            # ----------------------------
-            # Rendimiento acumulado
-            # ----------------------------
             st.markdown("### Rendimiento acumulado")
-
             df_cum = pd.DataFrame()
             if "Benchmark" in metrics_dict:
                 df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
@@ -646,34 +704,24 @@ def main():
 
             st.line_chart(df_cum)
 
-        else:
-            # Métricas de los portafolios optimizados
+        elif modo == "Optimización":
             metrics_opt = {
                 "MinVar": calcular_metricas(port_minvar, rf=rf_anual),
                 "MaxSharpe": calcular_metricas(port_maxsharpe, rf=rf_anual),
                 "Markowitz": calcular_metricas(port_markowitz, rf=rf_anual),
             }
 
-       
-
-
             df_metrics_opt = pd.DataFrame(metrics_opt)
             st.markdown("### Métricas de portafolios optimizados")
             st.dataframe(df_metrics_opt.style.format("{:.6f}"))
 
-            # Pesos de cada portafolio
             weights_df = pd.DataFrame(
-                {
-                    "MinVar": w_minvar,
-                    "MaxSharpe": w_maxsharpe,
-                    "Markowitz": w_markowitz,
-                },
+                {"MinVar": w_minvar, "MaxSharpe": w_maxsharpe, "Markowitz": w_markowitz},
                 index=retornos.columns
             )
             st.markdown("### Pesos de los portafolios optimizados")
             st.dataframe(weights_df.style.format("{:.4f}"))
 
-            # Rendimiento acumulado de optimizados
             st.markdown("### Rendimiento acumulado – Portafolios optimizados")
             df_cum_opt = pd.DataFrame({
                 "MinVar": (1 + port_minvar).cumprod(),
@@ -682,11 +730,16 @@ def main():
             })
             st.line_chart(df_cum_opt)
 
-if __name__ == "__main__":
-    main()
+        else:  # Black-Litterman
+            st.markdown("### Black-Litterman — Rendimientos implícitos vs BL")
+            df_bl = pd.DataFrame({
+                "Implicitos (%)": pd.Series(rend_imp),
+                "BL (%)": pd.Series(rend_bl),
+            })
+            st.dataframe(df_bl.style.format("{:.2f}"))
 
+            st.markdown("### Pesos optimizados (post BL)")
+            st.dataframe(pd.Series(pesos_bl).to_frame("Peso (%)").style.format("{:.2f}"))
 
-
-
-
-
+            st.markdown("### Métricas (post BL)")
+            st.write(metricas_bl)
