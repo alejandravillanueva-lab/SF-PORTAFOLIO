@@ -504,7 +504,7 @@ def main():
                 st.markdown("### Pesos optimizados (post BL)")
                 st.dataframe(pd.Series(pesos_bl).to_frame("Peso (%)").style.format("{:.2f}"))
 
-                st.markdown("### Métricas (post BL)")
+                st.markdown("### Métricas Black-Litterman")
 
                 c1, c2, c3, c4 = st.columns(4)
                 c1.metric("Rendimiento (%)", f"{metricas_bl['rendimiento (%)']:.2f}")
