@@ -77,19 +77,15 @@ PESOS_SECTORES = {"XLC":0.0999,"XLY":0.1025,"XLP":0.0482,"XLE":0.0295,"XLF":0.13
 # =========================================================
 # 2) MÉTRICAS
 # =========================================================
-def beta(port, benchmark):
-    cov = np.cov(port, benchmark)[0, 1]
-    var = np.var(benchmark)
-    return cov / var
-
 def sharpe(r, rf=0.0):
     excess = r - rf/252
-    return np.sqrt(252) * excess.mean() / excess.std()
+    std = excess.std()
+    return np.sqrt(252) * excess.mean() / std if std != 0 else np.nan
 
 def sortino(r, rf=0.0):
     excess = r - rf/252
     downside = excess[excess < 0].std()
-    return np.sqrt(252) * excess.mean() / downside
+    return np.sqrt(252) * excess.mean() / downside if downside != 0 else np.nan
 
 def max_drawdown(r):
     cum = (1 + r).cumprod()
@@ -212,11 +208,9 @@ def black_litterman(data, pesos_mercado, visiones, tau=0.05, delta=2.5,
     activos = list(data.columns)
     n = len(activos)
 
-    # pesos_mercado viene en DECIMALES (como tus PESOS_REGIONES / PESOS_SECTORES)
     w_market = np.array([pesos_mercado[a] for a in activos], dtype=float)
     w_market = w_market / w_market.sum()
 
-    # equilibrio
     pi = delta * (cov_matrix @ w_market)
 
     k = len(visiones)
@@ -285,7 +279,7 @@ def black_litterman(data, pesos_mercado, visiones, tau=0.05, delta=2.5,
                              bounds=bounds, constraints=constraints)
     else:
         if rendimiento_objetivo is None:
-            rendimiento_objetivo = float(mean_returns_bl.mean()) * 100.0  # %
+            rendimiento_objetivo = float(mean_returns_bl.mean()) * 100.0
         target = rendimiento_objetivo / 100.0
         constraints = (
             {'type': 'eq', 'fun': lambda w: np.sum(w) - 1},
@@ -414,115 +408,123 @@ def main():
     st.subheader(f"Estrategia seleccionada: {estrategia}")
 
     if st.button("Calcular métricas"):
+        port_arbi = None  # para que no reviente si no lo creas
+
         with st.spinner("Descargando datos y calculando…"):
             data = descargar_precios(tickers, years)
             retornos, port_bench = construir_portafolio(data, pesos_bench)
-
             mu, cov = obtener_mu_cov(retornos)
 
-            st.markdown("### Precios de cierre (últimos 10 registros)")
-            st.dataframe(data.tail(10))
+        st.markdown("### Precios de cierre (últimos 10 registros)")
+        st.dataframe(data.tail(10))
 
-            st.markdown("### Retornos diarios (primeros 5 registros)")
-            st.dataframe(retornos.head())
+        st.markdown("### Retornos diarios (primeros 5 registros)")
+        st.dataframe(retornos.head())
 
-            if modo in ["Solo benchmark", "Solo arbitrario", "Benchmark y arbitrario"]:
-                metrics_dict = {}
+        if modo in ["Solo benchmark", "Solo arbitrario", "Benchmark y arbitrario"]:
+            metrics_dict = {}
 
-                if modo in ["Solo benchmark", "Benchmark y arbitrario"]:
-                    metrics_dict["Benchmark"] = calcular_metricas(port_bench, rf=rf_anual)
+            if modo in ["Solo benchmark", "Benchmark y arbitrario"]:
+                metrics_dict["Benchmark"] = calcular_metricas(port_bench, rf=rf_anual)
 
-                if modo in ["Solo arbitrario", "Benchmark y arbitrario"]:
-                    if sum(pesos_arbitrarios.values()) == 0:
-                        st.error("Los pesos del portafolio arbitrario no pueden ser todos cero.")
-                        return
-                    port_arbi = construir_portafolio_arbitrario(retornos, pesos_arbitrarios)
-                    metrics_dict["Arbitrario"] = calcular_metricas(port_arbi, rf=rf_anual)
-
-                st.markdown("### Métricas de portafolios")
-
-                df_show = df_metrics.copy()
-
-                for fila in df_show.index:
-                    if "Sharpe" in fila or "Sortino" in fila or "Skew" in fila or "Kurtosis" in fila:
-                        df_show.loc[fila] = df_show.loc[fila].round(3)
-                    else:
-                        df_show.loc[fila] = (df_show.loc[fila] * 100).round(2)
-
-                st.dataframe(df_show, use_container_width=True)
-
-
-
-                st.markdown("### Rendimiento acumulado")
-                df_cum = pd.DataFrame()
-                if "Benchmark" in metrics_dict:
-                    df_cum["Benchmark"] = (1 + port_bench).cumprod()
-                if "Arbitrario" in metrics_dict:
-                    df_cum["Arbitrario"] = (1 + port_arbi).cumprod()
-                st.line_chart(df_cum)
-
-            elif modo == "Optimización":
-                w_minvar = min_var_portfolio(mu, cov)
-                w_maxsharpe = max_sharpe_portfolio(mu, cov, rf_anual)
-                w_markowitz = markowitz_target_portfolio(mu, cov, target_anual)
-
-                if w_minvar is None or w_maxsharpe is None or w_markowitz is None:
-                    st.error("No se pudo encontrar una solución óptima para alguna de las optimizaciones.")
+            if modo in ["Solo arbitrario", "Benchmark y arbitrario"]:
+                if sum(pesos_arbitrarios.values()) == 0:
+                    st.error("Los pesos del portafolio arbitrario no pueden ser todos cero.")
                     return
+                port_arbi = construir_portafolio_arbitrario(retornos, pesos_arbitrarios)
+                metrics_dict["Arbitrario"] = calcular_metricas(port_arbi, rf=rf_anual)
 
-                cols = retornos.columns
-                port_minvar = (retornos[cols] * w_minvar).sum(axis=1)
-                port_maxsharpe = (retornos[cols] * w_maxsharpe).sum(axis=1)
-                port_markowitz = (retornos[cols] * w_markowitz).sum(axis=1)
+            st.markdown("### Métricas de portafolios")
 
-                metrics_opt = {
-                    "MinVar": calcular_metricas(port_minvar, rf=rf_anual),
-                    "MaxSharpe": calcular_metricas(port_maxsharpe, rf=rf_anual),
-                    "Markowitz": calcular_metricas(port_markowitz, rf=rf_anual),
-                }
-                st.markdown("### Métricas de portafolios optimizados")
-                st.dataframe(pd.DataFrame(metrics_opt).style.format("{:.6f}"))
+            # ✅ AQUÍ ESTABA TU BUG: df_metrics no existía
+            df_metrics = pd.DataFrame(metrics_dict)
+            df_show = df_metrics.copy()
 
-                weights_df = pd.DataFrame({"MinVar": w_minvar, "MaxSharpe": w_maxsharpe, "Markowitz": w_markowitz}, index=cols)
-                st.markdown("### Pesos de los portafolios optimizados")
-                st.dataframe(weights_df.style.format("{:.4f}"))
+            for fila in df_show.index:
+                if ("Sharpe" in fila) or ("Sortino" in fila) or ("Skew" in fila) or ("Kurtosis" in fila):
+                    df_show.loc[fila] = df_show.loc[fila].round(3)
+                else:
+                    df_show.loc[fila] = (df_show.loc[fila] * 100).round(2)
 
-                st.markdown("### Rendimiento acumulado – Portafolios optimizados")
-                df_cum_opt = pd.DataFrame({
-                    "MinVar": (1 + port_minvar).cumprod(),
-                    "MaxSharpe": (1 + port_maxsharpe).cumprod(),
-                    "Markowitz": (1 + port_markowitz).cumprod(),
-                })
-                st.line_chart(df_cum_opt)
+            st.dataframe(df_show, use_container_width=True)
 
-            else:  # Black-Litterman
-                rend_imp, rend_bl, pesos_bl, metricas_bl = black_litterman(
-                    data=data,
-                    pesos_mercado=pesos_bench,   # <- DECIMALES, sin *100
-                    visiones=visiones,
-                    tau=tau,
-                    delta=delta,
-                    metodo_post=metodo_post_bl,
-                    rendimiento_objetivo=rendimiento_obj_bl,
-                    peso_min=0.0,
-                    peso_max=1.0
-                )
+            st.markdown("### Rendimiento acumulado")
+            df_cum = pd.DataFrame()
+            if "Benchmark" in metrics_dict:
+                df_cum["Benchmark"] = (1 + port_bench).cumprod()
+            if ("Arbitrario" in metrics_dict) and (port_arbi is not None):
+                df_cum["Arbitrario"] = (1 + port_arbi).cumprod()
+            st.line_chart(df_cum)
 
-                st.markdown("###  Rendimientos implícitos vs Black Litterman")
-                df_bl = pd.DataFrame({"Implicitos (%)": pd.Series(rend_imp), "BL (%)": pd.Series(rend_bl)})
-                st.dataframe(df_bl.style.format("{:.2f}"))
+        elif modo == "Optimización":
+            w_minvar = min_var_portfolio(mu, cov)
+            w_maxsharpe = max_sharpe_portfolio(mu, cov, rf_anual)
+            w_markowitz = markowitz_target_portfolio(mu, cov, target_anual)
 
-                st.markdown("### Pesos optimizados")
-                st.dataframe(pd.Series(pesos_bl).to_frame("Peso (%)").style.format("{:.2f}"))
+            if w_minvar is None or w_maxsharpe is None or w_markowitz is None:
+                st.error("No se pudo encontrar una solución óptima para alguna de las optimizaciones.")
+                return
 
-                st.markdown("### Métricas Black-Litterman")
+            cols = retornos.columns
+            port_minvar = (retornos[cols] * w_minvar).sum(axis=1)
+            port_maxsharpe = (retornos[cols] * w_maxsharpe).sum(axis=1)
+            port_markowitz = (retornos[cols] * w_markowitz).sum(axis=1)
 
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Rendimiento (%)", f"{metricas_bl['rendimiento (%)']:.2f}")
-                c2.metric("Volatilidad (%)", f"{metricas_bl['volatilidad (%)']:.2f}")
-                c3.metric("Sharpe", f"{metricas_bl['sharpe']:.4f}")
-                c4.metric("Tracking error (%)", f"{metricas_bl['tracking_error (%)']:.2f}")
+            metrics_opt = {
+                "MinVar": calcular_metricas(port_minvar, rf=rf_anual),
+                "MaxSharpe": calcular_metricas(port_maxsharpe, rf=rf_anual),
+                "Markowitz": calcular_metricas(port_markowitz, rf=rf_anual),
+            }
+            st.markdown("### Métricas de portafolios optimizados")
+            st.dataframe(pd.DataFrame(metrics_opt).style.format("{:.6f}"), use_container_width=True)
+
+            weights_df = pd.DataFrame(
+                {"MinVar": w_minvar, "MaxSharpe": w_maxsharpe, "Markowitz": w_markowitz},
+                index=cols
+            )
+            st.markdown("### Pesos de los portafolios optimizados")
+            st.dataframe(weights_df.style.format("{:.4f}"), use_container_width=True)
+
+            st.markdown("### Rendimiento acumulado – Portafolios optimizados")
+            df_cum_opt = pd.DataFrame({
+                "MinVar": (1 + port_minvar).cumprod(),
+                "MaxSharpe": (1 + port_maxsharpe).cumprod(),
+                "Markowitz": (1 + port_markowitz).cumprod(),
+            })
+            st.line_chart(df_cum_opt)
+
+        else:  # Black-Litterman
+            rend_imp, rend_bl, pesos_bl, metricas_bl = black_litterman(
+                data=data,
+                pesos_mercado=pesos_bench,
+                visiones=visiones,
+                tau=tau,
+                delta=delta,
+                metodo_post=metodo_post_bl,
+                rendimiento_objetivo=rendimiento_obj_bl,
+                peso_min=0.0,
+                peso_max=1.0
+            )
+
+            st.markdown("### Rendimientos implícitos vs Black Litterman")
+            df_bl = pd.DataFrame({
+                "Implicitos (%)": pd.Series(rend_imp),
+                "BL (%)": pd.Series(rend_bl)
+            })
+            st.dataframe(df_bl.style.format("{:.2f}"), use_container_width=True)
+
+            st.markdown("### Pesos optimizados")
+            st.dataframe(pd.Series(pesos_bl).to_frame("Peso (%)").style.format("{:.2f}"),
+                         use_container_width=True)
+
+            st.markdown("### Métricas Black-Litterman")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Rendimiento (%)", f"{metricas_bl['rendimiento (%)']:.2f}")
+            c2.metric("Volatilidad (%)", f"{metricas_bl['volatilidad (%)']:.2f}")
+            c3.metric("Sharpe", f"{metricas_bl['sharpe']:.4f}")
+            c4.metric("Tracking error (%)", f"{metricas_bl['tracking_error (%)']:.2f}")
 
 if __name__ == "__main__":
     main()
+
 
