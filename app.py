@@ -356,7 +356,7 @@ def main():
             min_value=0.0, max_value=0.5, value=0.10, step=0.01
         )
 
-    # Black-Litterman params
+    # Parámetros de Black-Litterman 
     tau = 0.05
     delta = 2.5
     metodo_post_bl = "Markowitz"
